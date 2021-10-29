@@ -32,18 +32,18 @@ func main() {
 }
 
 func start(context *gin.Context) {
-	context.JSON(http.StatusCreated, "OK")
-
-	rows := db.QueryRow("SELECT count(*) FROM active_intervals")
+	rows := db.QueryRow("SELECT COUNT(*) FROM active_intervals")
 	var count int
 	rows.Scan(&count)
 	if count < 1 {
 		time := time.Now()
-		_, err := db.Exec("INSERT INTO active_intervals VALUES (?, null)", time)
+		_, err := db.Exec("INSERT INTO active_intervals VALUES (?, NULL)", time)
 		if err != nil {
-			log.Fatal(err)
+			context.JSON(http.StatusInternalServerError, err)
 		}
+		context.JSON(http.StatusCreated, "Created")
 	}
+	context.JSON(http.StatusOK, "Not changed")
 }
 
 func end(context *gin.Context) {
