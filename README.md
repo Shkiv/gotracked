@@ -1,7 +1,7 @@
 # gotracked
 Simple and fast working time tracker.
 
-By default server listens `localhost:8080`
+By default server listens `localhost:8090`
 
 Methods:
 * `/start` - start tracking

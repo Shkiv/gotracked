@@ -28,7 +28,7 @@ func main() {
 	router.GET("/stop", stop)
 	router.GET("/intervals", getIntervals)
 
-	router.Run("localhost:8080")
+	router.Run("localhost:8090")
 }
 
 func start(context *gin.Context) {
