@@ -1,12 +1,9 @@
 package main
 
 import (
-	"context"
 	"database/sql"
 	"log"
 	"net/http"
-	"os"
-	"os/signal"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -21,7 +18,16 @@ type interval struct {
 var db *sql.DB // Database connection pool.
 
 func main() {
-	initDb()
+	dsn := "file:gotracked.sqlite?cache=shared&parseTime=true"
+	var err error
+
+	db, err = sql.Open("sqlite3", dsn)
+	if err != nil {
+		log.Fatal("unable to use data source name", err)
+	}
+	defer db.Close()
+
+	CreateDb()
 
 	router := gin.Default()
 	router.GET("/start", start)
@@ -114,15 +120,6 @@ func getIntervals(context *gin.Context) {
 	context.IndentedJSON(http.StatusOK, intervals)
 }
 
-func Ping(ctx context.Context) {
-	ctx, cancel := context.WithTimeout(ctx, 1*time.Second)
-	defer cancel()
-
-	if err := db.PingContext(ctx); err != nil {
-		log.Fatalf("unable to connect to database: %v", err)
-	}
-}
-
 func CreateDb() {
 
 	_, err0 := db.Exec(`CREATE TABLE IF NOT EXISTS intervals(
@@ -137,37 +134,4 @@ func CreateDb() {
 	if err1 != nil {
 		log.Fatal(err1)
 	}
-}
-
-func initDb() {
-	dsn := "file:gotracked.sqlite?cache=shared&parseTime=true"
-	var err error
-
-	// Opening a driver typically will not attempt to connect to the database.
-	db, err = sql.Open("sqlite3", dsn)
-	if err != nil {
-		// This will not be a connection error, but a DSN parse error or
-		// another initialization error.
-		log.Fatal("unable to use data source name", err)
-	}
-	// defer pool.Close()
-
-	db.SetMaxOpenConns(1)
-
-	ctx, stop := context.WithCancel(context.Background())
-	defer stop()
-
-	appSignal := make(chan os.Signal, 3)
-	signal.Notify(appSignal, os.Interrupt)
-
-	go func() {
-		select {
-		case <-appSignal:
-			stop()
-		}
-	}()
-
-	Ping(ctx)
-
-	CreateDb()
 }
