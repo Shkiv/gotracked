@@ -6,7 +6,8 @@ By default server listens `localhost:8090`
 Methods:
 * `/start` - start tracking
 * `/stop` - stop tracking
-* `/intervals` - show tracked intervals
+* `/intervals` - get tracked intervals
+* `/active-interval` - get start time of the active interval
 
 ## Building and running
 ### Linux

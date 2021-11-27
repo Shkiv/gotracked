@@ -15,7 +15,10 @@ type interval struct {
 	End   time.Time `json:"end"`
 }
 
-var db *sql.DB // Database connection pool.
+var (
+	db     *sql.DB
+	layout string = "2006-01-02 15:04:05.999999999Z07:00"
+)
 
 func main() {
 	dsn := "file:gotracked.sqlite?cache=shared&parseTime=true"
@@ -33,6 +36,7 @@ func main() {
 	router.GET("/start", start)
 	router.GET("/stop", stop)
 	router.GET("/intervals", getIntervals)
+	router.GET("/active-interval", getActiveInterval)
 
 	router.Run("localhost:8090")
 }
@@ -101,23 +105,32 @@ func getIntervals(context *gin.Context) {
 			interval  interval
 		)
 		if err := rows.Scan(&startTime, &endTime); err != nil {
-			log.Fatal(err)
+			log.Print(err)
 		}
 		log.Println("start ", startTime, "end", endTime)
-		layout := "2006-01-02 15:04:05.999999999Z07:00"
 		interval.Start, err = time.Parse(layout, startTime.String)
 		if err != nil {
-			log.Fatal(err)
+			log.Print(err)
 		}
-		if endTime.String != "" {
+		if endTime.Valid {
 			interval.End, err = time.Parse(layout, endTime.String)
 		}
 		if err != nil {
-			log.Fatal(err)
+			log.Print(err)
 		}
 		intervals = append(intervals, interval)
 	}
 	context.IndentedJSON(http.StatusOK, intervals)
+}
+
+func getActiveInterval(context *gin.Context) {
+	var startTimeString sql.NullString
+	db.QueryRow("SELECT interval_start FROM active_intervals").Scan(&startTimeString)
+	startTime, err := time.Parse(layout, startTimeString.String)
+	if err != nil {
+		log.Print(err)
+	}
+	context.JSON(http.StatusOK, startTime)
 }
 
 func CreateDb() {
