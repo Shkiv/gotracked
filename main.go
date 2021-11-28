@@ -129,6 +129,8 @@ func getActiveInterval(context *gin.Context) {
 	startTime, err := time.Parse(layout, startTimeString.String)
 	if err != nil {
 		log.Print(err)
+		context.JSON(http.StatusOK, nil)
+		return
 	}
 	context.JSON(http.StatusOK, startTime)
 }
