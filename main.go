@@ -128,7 +128,6 @@ func getActiveInterval(context *gin.Context) {
 	db.QueryRow("SELECT interval_start FROM active_intervals").Scan(&startTimeString)
 	startTime, err := time.Parse(layout, startTimeString.String)
 	if err != nil {
-		log.Print(err)
 		context.JSON(http.StatusOK, nil)
 		return
 	}
