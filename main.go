@@ -107,7 +107,6 @@ func getIntervals(context *gin.Context) {
 		if err := rows.Scan(&startTime, &endTime); err != nil {
 			log.Print(err)
 		}
-		log.Println("start ", startTime, "end", endTime)
 		interval.Start, err = time.Parse(layout, startTime.String)
 		if err != nil {
 			log.Print(err)
