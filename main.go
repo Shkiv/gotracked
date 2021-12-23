@@ -6,11 +6,14 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/google/uuid"
+
 	"github.com/gin-gonic/gin"
 	_ "github.com/mattn/go-sqlite3"
 )
 
 type interval struct {
+	UUID  uuid.UUID `json:"uuid"`
 	Start time.Time `json:"start"`
 	End   time.Time `json:"end"`
 }
@@ -72,8 +75,7 @@ func stop(context *gin.Context) {
 		context.JSON(http.StatusOK, "No interval")
 		return
 	}
-	time := time.Now()
-	_, insErr := tx.Exec("INSERT INTO intervals VALUES (?, ?)", startTime, time)
+	_, insErr := tx.Exec("INSERT INTO intervals (uuid, interval_start, interval_end) VALUES (?, ?, ?)", uuid.New(), startTime, time.Now())
 	if insErr != nil {
 		tx.Rollback()
 		context.JSON(http.StatusInternalServerError, nil)
@@ -91,7 +93,7 @@ func stop(context *gin.Context) {
 }
 
 func getIntervals(context *gin.Context) {
-	rows, err := db.Query("SELECT * FROM intervals")
+	rows, err := db.Query("SELECT uuid, interval_start, interval_end FROM intervals")
 	if err != nil {
 		log.Fatal("Unable to execute SELECT query: ", err)
 	}
@@ -100,13 +102,15 @@ func getIntervals(context *gin.Context) {
 	var intervals []interval
 	for rows.Next() {
 		var (
+			uuid      uuid.UUID
 			startTime sql.NullString
 			endTime   sql.NullString
 			interval  interval
 		)
-		if err := rows.Scan(&startTime, &endTime); err != nil {
+		if err := rows.Scan(&uuid, &startTime, &endTime); err != nil {
 			log.Print(err)
 		}
+		interval.UUID = uuid
 		interval.Start, err = time.Parse(layout, startTime.String)
 		if err != nil {
 			log.Print(err)
@@ -135,16 +139,26 @@ func getActiveInterval(context *gin.Context) {
 
 func CreateDb() {
 
-	_, err0 := db.Exec(`CREATE TABLE IF NOT EXISTS intervals(
+	_, err := db.Exec(`CREATE TABLE IF NOT EXISTS intervals(
+		uuid blob,
 		interval_start timestamp with time zone,
 		interval_end timestamp with time zone)`)
-	if err0 != nil {
-		log.Fatal(err0)
+	if err != nil {
+		log.Fatal(err)
 	}
 
-	_, err1 := db.Exec(`CREATE TABLE IF NOT EXISTS active_intervals(
+	_, err = db.Exec(`CREATE TABLE IF NOT EXISTS active_intervals(
 		interval_start timestamp with time zone)`)
-	if err1 != nil {
-		log.Fatal(err1)
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+
+func UpdateDb() {
+	_, err := db.Exec(`ALTER TABLE intervals
+		ADD uuid blob
+	`)
+	if err != nil {
+		log.Fatal(err)
 	}
 }
